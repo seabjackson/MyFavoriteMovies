@@ -99,8 +99,57 @@ class LoginViewController: UIViewController {
         /* 4. Make the request */
         let task = appDelegate.sharedSession.dataTaskWithRequest(request) { (data, response, error) in
             
+            // if an error occurs, print it and re-enable the UI
+            func displayError(error: String) {
+                print(error)
+                performUIUpdatesOnMain {
+                    self.setUIEnabled(true)
+                    self.debugTextLabel.text = "Login Failed (Request Token)"
+                }
+            }
+            
+            // guard if there was an error
+            guard (error == nil) else {
+                displayError("There was an error with your request: \(error)")
+                return
+            }
+            
+            // was there a successful 2xx response
+            guard let statusCode = (response as? NSHTTPURLResponse)?.statusCode where statusCode >= 200 && statusCode <= 299 else {
+                displayError("Your request returned a status code other than 2xx!")
+                return
+            }
+            
+            // was the data returned
+            guard let data = data else {
+                displayError("No data was returned by the request!")
+                return
+            }
+            
             /* 5. Parse the data */
+            let parsedResult: AnyObject!
+            do {
+                parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            } catch {
+                displayError("Could not parse the data as JSON: '\(data)'")
+                return
+            }
+            
+            // did TheMovieDB return an error?
+            if let _ = parsedResult[Constants.TMDBResponseKeys.StatusCode] as? Int {
+                displayError("TheMovieDB returned an error. See the '\(Constants.TMDBResponseKeys.StatusCode)' and '\(Constants.TMDBResponseKeys.StatusMessage)' in \(parsedResult)")
+                return
+            }
+            
+            // is the request token key in the parsedResult
+            guard let requestToken = parsedResult[Constants.TMDBResponseKeys.RequestToken] as? String else {
+                displayError("Cannot find key '\(Constants.TMDBResponseKeys.RequestToken)' in \(parsedResult)")
+                return
+            }
+            
             /* 6. Use the data! */
+            self.appDelegate.requestToken = requestToken
+            self.loginWithToken(self.appDelegate.requestToken!)
         }
 
         /* 7. Start the request */
