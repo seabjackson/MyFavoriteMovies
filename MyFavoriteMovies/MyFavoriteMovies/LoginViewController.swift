@@ -309,7 +309,7 @@ class LoginViewController: UIViewController {
         
         /* 1. Set the parameters */
         let methodParameters = [
-            Constants.TMDBParameterValues.ApiKey: Constants.TMDBParameterValues.ApiKey,
+            Constants.TMDBParameterKeys.ApiKey: Constants.TMDBParameterValues.ApiKey,
             Constants.TMDBParameterKeys.SessionID: sessionID
         ]
         
@@ -361,18 +361,19 @@ class LoginViewController: UIViewController {
             }
             
             // is the "id" key in parsedResult?
-            guard let userID = parsedResult![Constants.TMDBResponseKeys.UserID] as? Int else {
+            guard let userID = parsedResult[Constants.TMDBResponseKeys.UserID] as? Int else {
                 displayError("Cannot find key '\(Constants.TMDBResponseKeys.UserID)' in \(parsedResult)")
                 return
             }
             
             /* 6. Use the data! */
+            print(userID)
             self.appDelegate.userID = userID
             self.completeLogin()
         }
         
-        
         /* 7. Start the request */
+        task.resume()
     }
 }
 
